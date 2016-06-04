@@ -22,7 +22,15 @@ var clears=[
 /<\/table>/g,
 /<strong>頁<\/strong>.+|/g,
 /<SPAN lang=EN-GB>/g,
-/<SPAN lang=ZH-TW>/g
+/<SPAN lang=ZH-TW>/g,
+/<SPAN style="mso-ansi-language: EN-US">/g,
+/<SPAN style="mso-special-character: footnote">/g,
+/<SPAN style="mso-ansi-language: EN-US" lang=EN-US>/g,
+'<?xml:namespace prefix = o ns = "urn:schemas-microsoft-com:office:office" /><o:p></o:p>',
+/<P style="MARGIN: 0in 0in 0pt" class=MsoFootnoteText>/g,
+/<P style="TEXT-JUSTIFY: inter-ideograph; TEXT-ALIGN: justify; MARGIN: 0cm 0cm 0pt" class=MsoFootnoteText>/g,
+'<P style="MARGIN: 0in 0in 0pt" class=MsoFootnoteText><SPAN class=MsoFootnoteReference><SPAN style="mso-special-character: footnote"></ndef>',
+
 ]
 
 var replacendef=function(content){
@@ -80,12 +88,30 @@ var content=fs.readFileSync("html/"+fn,"utf8");
 	content=content.replace(/ +/g," ");
 	content=content.replace(/\n /g,"\n");
 	content=content.replace(/\n+/g,"\n");
+	content=content.replace(/<\/I><I>/g,"");
+
+	var getsid=function(fn){
+		var nikaya=fn.substr(0,2);;
+		if (nikaya=="dn"||nikaya=="mn") {
+			var m=content.match(/<td class="subtitle">(\d+)/);
+			if (m && m[1]) {
+				content=content.replace(/<td class="subtitle">(\d+)/,function(m,sid){
+					return '<sid n="'+sid+'"/>';
+				})
+				return nikaya+parseInt(m[1]);
+			} else return fn;
+		} else {
+			return fn;
+		}
+	}
 
 	if (writeToDisk) {
-		var targetfn="xml/"+fn.substring(0,fn.length-4)+"xml";
-		console.log("write to",targetfn);
+		var chilinfn=fn.substring(0,fn.length-5);
+		var targetfn="genxml/"+(getsid(chilinfn,content)||chilinfn)+".xml";
+		console.log("write to",targetfn,chilinfn);
 		fs.writeFileSync(targetfn,content,"utf8");
 	}
 }
+
 
 files.forEach(processfile);
